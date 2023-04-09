@@ -327,7 +327,7 @@ function MessagePane(props: {chat?: Chat}) {
 
 	return <div className="d-flex flex-column flex-grow-1 vh-100">
 		<div
-			className="d-flex flex-column flex-grow-1 overflow-scroll px-4 py-3"
+			className="message-container d-flex flex-column flex-grow-1 overflow-scroll px-4 pb-3"
 			ref={messageContainerRef}>
 			{messages.map(message => <MessageComponent key={message.id} message={message}/>)}
 		</div>
