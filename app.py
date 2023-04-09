@@ -51,8 +51,8 @@ def authorize_socket_user(fn):
 			get_user() is None or \
 			(chat := get_socket_chat()) is None or not get_user().voted_for(chat):
 			flask_socketio.disconnect()
-
-		return fn(*args, **kwargs)
+		else:
+			return fn(*args, **kwargs)
 
 	return wrapper
 
@@ -63,6 +63,7 @@ def get_db():
 	return flask.g.db
 
 def get_socket_chat():
+	print(flask_socketio.rooms())
 	chat_rooms = set(flask_socketio.rooms()) - {flask.request.sid}
 
 	if len(chat_rooms) != 1:
@@ -71,15 +72,13 @@ def get_socket_chat():
 	return get_db().chat(next(iter(chat_rooms)))
 
 def get_user():
-	context = flask.session if "sid" in flask.session else flask.g
-
-	if "user" not in context:
+	if "user" not in flask.g:
 		if "user_id" not in flask.session:
 			return
 
-		context.user = DatabaseUser(get_db(), flask.session["user_id"])
+		flask.g.user = DatabaseUser(get_db(), flask.session["user_id"])
 
-	return context.user
+	return flask.g.user
 
 @app.route("/")
 def index():

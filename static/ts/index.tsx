@@ -26,7 +26,7 @@ function App() {
 
 	React.useEffect(() => {
 		fetch("/users/me").then(response => response.json()).then((json: User) => setMyUser(json))
-	})
+	}, [])
 
 	if (myUser == null) {
 		return <></>
@@ -93,7 +93,6 @@ function MessagePane(props: {chatID?: string}) {
 
 		const socket = io({
 			auth: {
-				// TODO: We should perform authentication here
 				chatID: props.chatID
 			}
 		})
