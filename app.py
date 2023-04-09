@@ -150,5 +150,18 @@ def on_message(data):
 	else:
 		flask_socketio.emit("error", "Please provide a string with your message.")
 
+@app.route("/chats", methods=["GET"])
+def chats():
+	return '[{"id":"1","name":"Hackathon", "votes": "22", "open": "false", "openDay": "MON 3-5pm"},{"id":"2","name":"Art orgy", "votes": "124", "open": "t", "openDay": "SAT 9pm-12am"},{"id":"3","name":"Engineering stuff", "votes": "21", "open": "t", "openDay": "TUE 1-3pm"}]'
+
+@app.route("/chats/<id>", methods=["GET"])
+def chat(id):
+	print(id)
+	if id == "1":
+		return '{"id":"1","name":"Hackathon", "votes": "22", "open": "f", "openDay": "MON 3-5pm"}'
+	if id == "2":
+		return '{"id":"2","name":"Art orgy", "votes": "124", "open": "t", "openDay": "SAT 9pm-12am"}'
+	return '{"id":"3","name":"Engineering stuff", "votes": "21", "open": "t", "openDay": "TUE 1-3pm"}'
+
 if __name__ == "__main__":
 	socketio.run(app, debug=True)
