@@ -1,4 +1,6 @@
 import argon2
+import dataclasses
+import datetime
 import os
 import psycopg2
 import uuid
@@ -56,8 +58,14 @@ CREATE TABLE IF NOT EXISTS votes (
 		self.password_hasher = argon2.PasswordHasher()
 
 	@staticmethod
-	def _generate_uuid():
+	def generate_uuid():
 		return str(uuid.uuid4())
+
+	def chat(self, id_):
+		self.cur.execute("SELECT FROM chats WHERE id = %s;", (id_,))
+
+		if self.cur.rowcount > 0:
+			return DatabaseChat(self, id_)
 
 	def create_user(self, username, first_name, last_name, password):
 		""" Attempts to create a user.
@@ -67,7 +75,7 @@ CREATE TABLE IF NOT EXISTS votes (
 		 """
 
 		try:
-			id_ = self.__class__._generate_uuid()
+			id_ = self.__class__.generate_uuid()
 			hashed = self.password_hasher.hash(password)
 
 			self.cur.execute(
@@ -91,6 +99,43 @@ CREATE TABLE IF NOT EXISTS votes (
 		if self.cur.rowcount > 0:
 			return DatabaseUser(self, self.cur.fetchone()[0])
 
+class DatabaseChat:
+	def __init__(self, db, id_):
+		self.db = db
+		self.id = id_
+
+	def insert_message(self, user, content, timestamp):
+		""" Inserts a message posted by a particular user and including a timestamp.
+
+		Returns a DatabaseMessage object corresponding to the inserted message.
+		"""
+
+		message_values = (Database.generate_uuid(), self.id, user.id, content, timestamp)
+
+		self.db.cur.execute("INSERT INTO messages VALUES (%s, %s, %s, %s, %s)", message_values)
+
+		return DatabaseMessage(*message_values)
+
+	def messages(self):
+		self.db.cur.execute(
+			"""
+SELECT id, chat_id, user_id, content, timestamp
+FROM messages
+WHERE chat_id = %s
+ORDER BY timestamp;""",
+			(self.id,)
+		)
+
+		return [DatabaseMessage(*row) for row in self.db.cur.fetchall()]
+
+@dataclasses.dataclass
+class DatabaseMessage:
+	id: str
+	chat_id: str
+	user_id: str
+	content: str
+	timestamp: datetime.datetime
+
 class DatabaseUser:
 	def __init__(self, db, id_):
 		self.db = db
@@ -102,10 +147,7 @@ class DatabaseUser:
 		Returns True if the password is correct and False otherwise.
 		"""
 
-		self.cur.execute("SELECT password FROM users WHERE id = %s;", (self.id,))
-
-		if self.cur.rowcount == 0:
-			return
+		self.db.cur.execute("SELECT password FROM users WHERE id = %s;", (self.id,))
 
 		try:
 			self.db.password_hasher.verify(self.cur.fetchone()[0], password)
@@ -113,3 +155,13 @@ class DatabaseUser:
 			return False
 
 		return True
+
+	def voted_for(self, chat):
+		""" Returns True if the user voted for a particular chat and False otherwise. """
+
+		self.db.cur.execute(
+			"SELECT FROM votes WHERE user_id = %s AND chat_id = %s;",
+			(self.id, chat.id)
+		)
+
+		return self.db.cur.rowcount > 0
