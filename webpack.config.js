@@ -4,7 +4,8 @@ module.exports = {
 	entry: "./static/ts/index.tsx",
 	externals: {
 		"react": "React",
-		"react-dom": "ReactDOM"
+		"react-dom": "ReactDOM",
+		"socket.io-client": "io"
 	},
 
 	output: {

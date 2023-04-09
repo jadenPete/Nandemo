@@ -1,6 +1,7 @@
 __pycache__/
 /.env
 /node_modules/
+/secret_key.txt
 /static/js/
 /venv/
 /yarn-error.log
