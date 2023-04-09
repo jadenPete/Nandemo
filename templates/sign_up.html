@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <title>Nandemo</title>
+    </head>
+    <body>
+        <div class="container">
+            <h1> Please Sign Up!</h1>
+            <br>
+            <form action="/sign_up" method ="POST">
+                <input type="text" placeholder="First Name" name="first_name">
+                <input type="text" placeholder="Last Name" name="last_name">
+                <br>
+                <input type="text" placeholder="User Name" name="username">
+                <br>
+                <input type="password" placeholder="Password" name="password">
+                <br>
+                <input type="password" placeholder="Confirm Password" name="password_check">
+                <br>
+                <input class="btn btn-default" type = "Submit" name="Create Account">
+            </form>
+            {% if error %}
+            <p class = "error"><strong>Error: </strong>{{ error }}</p>
+            {% endif %}
+        </div>
+    </body>
+</html>
