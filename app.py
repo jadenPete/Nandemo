@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from flask import Flask, render_template, url_for, request, session
+
 from db import Database, DatabaseMessage, DatabaseUser
 
 import datetime
@@ -12,7 +14,7 @@ import uuid
 
 dotenv.load_dotenv()
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 
 def generate_secret_key():
 	secret_key_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "secret_key.txt")
@@ -72,15 +74,19 @@ def get_user():
 	context = flask.session if "sid" in flask.session else flask.g
 
 	if "user" not in context:
-		# TODO: Replace this once Phillip and Raven finish writing their authentication code
-		context.user = DatabaseUser(get_db(), "4f35714b-171e-45f9-bf2e-6a92cdfb6f72")
+		if "user_id" not in flask.session:
+			return
+
+		context.user = DatabaseUser(get_db(), flask.session["user_id"])
 
 	return context.user
 
 @app.route("/")
-@authenticate_user
 def index():
-	return flask.render_template("index.html")
+	if get_user() is None:
+		return flask.redirect(url_for("login"))
+	else:
+		return flask.render_template("index.html")
 
 @app.route("/chats/<chat_id>/messages")
 @authenticate_user
@@ -95,6 +101,22 @@ def chat_messages(chat_id):
 def my_user():
 	return flask.jsonify(get_user().to_json())
 
+@app.route('/login', methods=['GET','POST'])
+def login():
+	if flask.request.method == 'POST':
+		error = None
+		if get_db().user_by_username(flask.request.form['username']) == None:
+			error = "User not found"
+			return render_template('login.html', error=error)
+		elif get_db().user_by_username(flask.request.form['username']).verify_password(flask.request.form['password']) == False:
+			error = "Password is invalid"
+			return render_template('login.html', error=error)
+		else:
+			user = flask.request.form['username']
+			session["user_id"] = get_db().user_by_username(user).id
+			return flask.redirect(url_for("index"))
+	return flask.render_template("login.html")
+
 @app.route('/sign_up', methods=['GET','POST'])
 def sign_up():
 	if flask.request.method == 'POST':
@@ -104,9 +126,13 @@ def sign_up():
 			return flask.render_template("sign_up.html", error=error)
 		elif get_db().create_user(flask.request.form['username'],flask.request.form['first_name'],flask.request.form['last_name'],flask.request.form['password'])==None:
 			error = "Username is invalid, please choose another username."
-		return flask.render_template('sign_up.html', error = error)
+			return flask.render_template('sign_up.html', error = error)
+		else:
+			user = flask.request.form['username']
+			session["user_id"] = get_db().user_by_username(user).id
+			return flask.redirect(url_for("index"))
 	else:
-		return flask.render_template('sign_up.html')
+		return flask.render_template("sign_up.html")
 
 @socketio.on("connect")
 def on_connect(auth):
@@ -116,6 +142,7 @@ def on_connect(auth):
 	flask_socketio.join_room(chat_id)
 
 @socketio.on("message")
+@authorize_socket_user
 def on_message(data):
 	if isinstance(data, str):
 		message = get_socket_chat().insert_message(get_user(), data, datetime.datetime.now())

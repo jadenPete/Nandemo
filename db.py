@@ -179,7 +179,7 @@ class DatabaseUser:
 		self.db.cur.execute("SELECT password FROM users WHERE id = %s;", (self.id,))
 
 		try:
-			self.db.password_hasher.verify(self.cur.fetchone()[0], password)
+			self.db.password_hasher.verify(self.db.cur.fetchone()[0], password)
 		except argon2.exceptions.VerifyMismatchError:
 			return False
 
