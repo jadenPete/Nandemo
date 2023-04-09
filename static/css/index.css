@@ -1,3 +1,7 @@
+.chats-table {
+    width: 40%;
+}
+
 .message-content {
 	border-radius: 9999px;
 	padding: 0.75rem 1rem;

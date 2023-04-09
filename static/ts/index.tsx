@@ -22,6 +22,7 @@ interface User {
 const MyUserContext = React.createContext<User>(null)
 
 function App() {
+	const [chatID, setChatID] = React.useState<string>()
 	const [myUser, setMyUser] = React.useState<User>(null)
 
 	React.useEffect(() => {
@@ -33,8 +34,49 @@ function App() {
 	}
 
 	return <MyUserContext.Provider value={myUser}>
-		<MessagePane chatID="4f35714b-171e-45f9-bf2e-6a92cdfb6f72"></MessagePane>
+		<div className="d-flex flex-row">
+			<ChatList onChangeChatID={chatID => setChatID(chatID)}/>
+			<MessagePane chatID={chatID}/>
+		</div>
 	</MyUserContext.Provider>
+}
+
+function ChatList(props: {onChangeChatID: (chatID: string) => void}) {
+	const [chats, setChats] = React.useState([]);
+	const [currentChat, setCurrentChat] = React.useState({});
+
+	async function fetchChats() {
+		const response = await fetch("/chats");
+		const json = await response.json();
+		setChats(json);
+	}
+
+	if (chats.length == 0) {fetchChats();}
+
+	async function displayCurrentChat(id) {
+		const response = await fetch(`/chats/${id}`);
+		const json = await response.json();
+		props.onChangeChatID(json.id)
+	}
+	return <div>
+		<h1>Nandemo</h1>
+		<table className="table table-hover chats-table">
+			<tbody>
+				{chats.map(chat => 
+					<tr className={chat.open == "t" ? "" : "bg-muted text-secondary"}>
+						<td>{chat.votes}</td>
+						<td>{chat.name}</td>
+						<td>{chat.openDay}</td>
+						<td><button onClick={() => displayCurrentChat(chat.id)}id={chat.id} disabled={chat.open != "t" ? true: false}>{chat.name}</button></td>
+					</tr>
+				)}
+			</tbody>
+		</table>
+		<div>
+			Current chat:
+			{currentChat["name"]}
+		</div>gi
+	</div>
 }
 
 function MessageComponent(props: {message: Message}) {
@@ -118,9 +160,7 @@ function MessagePane(props: {chatID?: string}) {
 		<div
 			className="d-flex flex-column flex-grow-1 overflow-scroll p-2"
 			ref={messageContainerRef}>
-			{messages.map(message =>
-				<MessageComponent key={message.id} message={message}></MessageComponent>
-			)}
+			{messages.map(message => <MessageComponent key={message.id} message={message}/>)}
 		</div>
 
 		<div className="border-top d-flex p-3 shadow-sm">
@@ -128,7 +168,7 @@ function MessagePane(props: {chatID?: string}) {
 				className="new-message-input form-control rounded-0 rounded-start"
 				placeholder="Enter your message"
 				onInput={() => setPseudoState(pseudoState => !pseudoState)}
-				ref={messageInputRef}></input>
+				ref={messageInputRef}/>
 
 			<button type="button"
 				className="new-message-button btn btn-primary d-flex rounded-0 rounded-end"
@@ -142,4 +182,4 @@ function MessagePane(props: {chatID?: string}) {
 
 ReactDOMClient
 	.createRoot(document.querySelector(".root"))
-	.render(<App></App>)
+	.render(<App/>)
