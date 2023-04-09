@@ -63,7 +63,6 @@ def get_db():
 	return flask.g.db
 
 def get_socket_chat():
-	print(flask_socketio.rooms())
 	chat_rooms = set(flask_socketio.rooms()) - {flask.request.sid}
 
 	if len(chat_rooms) != 1:

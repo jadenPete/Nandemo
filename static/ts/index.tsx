@@ -323,7 +323,7 @@ function MessagePane(props: {chat?: Chat}) {
 	}
 
 	const isChatMeetingOngoing = getChatRemainingTime(props.chat) > props.chat.meetingDuration
-	const isChatDisabled = isChatMeetingOngoing || !props.chat.voted
+	const isChatDisabled = isChatMeetingOngoing || !props.chat.voted || props.chat.voteCount < 2
 
 	return <div className="d-flex flex-column flex-grow-1 vh-100">
 		<div
