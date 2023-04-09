@@ -87,6 +87,21 @@ def index():
 	else:
 		return flask.render_template("index.html")
 
+@app.route("/chats", methods=["GET", "POST"])
+@authenticate_user
+def chats():
+	if flask.request.method == "GET":
+		return flask.jsonify([chat.to_json(get_user()) for chat in get_db().ordered_chats()])
+
+	json = flask.request.json
+
+	if not isinstance(json, str):
+		flask.abort(400)
+
+	chat = get_user().create_chat(json, datetime.datetime.now().time())
+
+	return flask.jsonify(chat.to_json(get_user()))
+
 @app.route("/chats/<chat_id>/messages")
 @authenticate_user
 def chat_messages(chat_id):
@@ -94,6 +109,17 @@ def chat_messages(chat_id):
 		flask.abort(404)
 
 	return flask.jsonify([message.to_json() for message in chat.messages()])
+
+@app.route("/chats/<chat_id>/vote", methods=["POST", "DELETE"])
+@authenticate_user
+def chat_vote(chat_id):
+	if (chat := get_db().chat(chat_id)) is None:
+		flask.abort(404)
+
+	if flask.request.method == "POST":
+		return flask.Response(status=200 if get_user().vote(chat) else 405)
+
+	return flask.Response(status=200 if get_user().delete_vote(chat) else 405)
 
 @app.route("/users/me")
 @authenticate_user
@@ -143,25 +169,13 @@ def on_connect(auth):
 @socketio.on("message")
 @authorize_socket_user
 def on_message(data):
+	# TODO: Use server-side validation to ensure messages are sent while a chat meeting is ongoing
 	if isinstance(data, str):
 		message = get_socket_chat().insert_message(get_user(), data, datetime.datetime.now())
 
 		flask_socketio.emit("message_broadcast", message.to_json(), json=True, to=get_socket_chat().id)
 	else:
 		flask_socketio.emit("error", "Please provide a string with your message.")
-
-@app.route("/chats", methods=["GET"])
-def chats():
-	return '[{"id":"1","name":"Hackathon", "votes": "22", "open": "false", "openDay": "MON 3-5pm"},{"id":"2","name":"Art orgy", "votes": "124", "open": "t", "openDay": "SAT 9pm-12am"},{"id":"3","name":"Engineering stuff", "votes": "21", "open": "t", "openDay": "TUE 1-3pm"}]'
-
-@app.route("/chats/<id>", methods=["GET"])
-def chat(id):
-	print(id)
-	if id == "1":
-		return '{"id":"1","name":"Hackathon", "votes": "22", "open": "f", "openDay": "MON 3-5pm"}'
-	if id == "2":
-		return '{"id":"2","name":"Art orgy", "votes": "124", "open": "t", "openDay": "SAT 9pm-12am"}'
-	return '{"id":"3","name":"Engineering stuff", "votes": "21", "open": "t", "openDay": "TUE 1-3pm"}'
 
 if __name__ == "__main__":
 	socketio.run(app, debug=True)

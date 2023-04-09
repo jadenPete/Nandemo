@@ -1,5 +1,27 @@
-.chats-table {
-    width: 40%;
+.chat-button:hover {
+	cursor: pointer;
+}
+
+.chat-button > td {
+	vertical-align: middle;
+}
+
+.chat-button-selected {
+	background-color: #e0e0e0;
+	outline: 1px solid darkgray;
+}
+
+.chat-list {
+	background-color: #f0f0f0;
+	min-width: 25vw;
+}
+
+.countdown {
+	border-radius: 12px;
+	font-family: monospace;
+	font-size: 3rem;
+	right: 1rem;
+	top: 1rem;
 }
 
 .message-content {
@@ -26,4 +48,8 @@
 
 .new-message-input {
 	background-color: #f0f0f0 !important;
+}
+
+.title {
+	font-weight: 600;
 }
