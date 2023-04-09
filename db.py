@@ -119,8 +119,9 @@ class DatabaseChat:
 	def messages(self):
 		self.db.cur.execute(
 			"""
-SELECT id, chat_id, user_id, content, timestamp
+SELECT messages.id, chat_id, user_id, first_name, last_name, content, timestamp
 FROM messages
+JOIN users ON user_id = users.id
 WHERE chat_id = %s
 ORDER BY timestamp;""",
 			(self.id,)
@@ -133,13 +134,41 @@ class DatabaseMessage:
 	id: str
 	chat_id: str
 	user_id: str
+	user_first_name: str
+	user_last_name: str
 	content: str
 	timestamp: datetime.datetime
+
+	def to_json(self):
+		return {
+			"id": self.id,
+			"chatID": self.chat_id,
+			"userID": self.user_id,
+			"userFirstName": self.user_first_name,
+			"userLastName": self.user_last_name,
+			"content": self.content,
+			"timestamp": int(self.timestamp.timestamp())
+		}
 
 class DatabaseUser:
 	def __init__(self, db, id_):
 		self.db = db
 		self.id = id_
+
+	def to_json(self):
+		self.db.cur.execute(
+			"SELECT username, first_name, last_name FROM users WHERE id = %s;",
+			(self.id,)
+		)
+
+		username, first_name, last_name = self.db.cur.fetchone()
+
+		return {
+			"id": self.id,
+			"username": username,
+			"first_name": first_name,
+			"last_name": last_name
+		}
 
 	def verify_password(self, password):
 		""" Verifies the users the password with one provided upon login.

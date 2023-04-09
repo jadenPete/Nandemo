@@ -30,25 +30,7 @@ def generate_secret_key():
 
 generate_secret_key()
 
-socketio = flask_socketio.SocketIO(app, json=flask.json)
-
-class CustomJSONProvider(flask.json.provider.DefaultJSONProvider):
-	@staticmethod
-	def default(obj):
-		if isinstance(obj, DatabaseMessage):
-			return {
-				"id": obj.id,
-				"chatID": obj.chat_id,
-				"userID": obj.user_id,
-				"content": obj.content,
-				"timestamp": datetime.timedelta(
-					hours=obj.timestamp.hour,
-					minutes=obj.timestamp.minute,
-					seconds=obj.timstamp.seconds
-				).total_seconds()
-			}
-
-		return super().default(obj)
+socketio = flask_socketio.SocketIO(app)
 
 def authenticate_user(fn):
 	@functools.wraps(fn)
@@ -106,7 +88,12 @@ def chat_messages(chat_id):
 	if (chat := get_db().chat(chat_id)) is None:
 		flask.abort(404)
 
-	return flask.jsonify(chat.messages())
+	return flask.jsonify([message.to_json() for message in chat.messages()])
+
+@app.route("/users/me")
+@authenticate_user
+def my_user():
+	return flask.jsonify(get_user().to_json())
 
 @app.route('/sign_up', methods=['GET','POST'])
 def sign_up():
@@ -133,7 +120,7 @@ def on_message(data):
 	if isinstance(data, str):
 		message = get_socket_chat().insert_message(get_user(), data, datetime.datetime.now())
 
-		flask_socketio.emit("message_broadcast", message, json=True, to=get_socket_chat().id)
+		flask_socketio.emit("message_broadcast", message.to_json(), json=True, to=get_socket_chat().id)
 	else:
 		flask_socketio.emit("error", "Please provide a string with your message.")
 
