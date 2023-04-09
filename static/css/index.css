@@ -1,10 +1,17 @@
 .message-content {
 	border-radius: 9999px;
-	border-top-right-radius: 0;
 	padding: 0.75rem 1rem;
 }
 
-.message-timestamp {
+.message-content-left {
+	border-top-left-radius: 0;
+}
+
+.message-content-right {
+	border-top-right-radius: 0;
+}
+
+.message-metadatum {
 	font-size: 0.625rem;
 	font-weight: 500;
 }

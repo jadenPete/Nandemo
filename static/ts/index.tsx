@@ -6,24 +6,57 @@ interface Message {
 	id: string
 	chatID: string
 	userID: string
+	userFirstName: string
+	userLastName: string
 	content: string
 	timestamp: number
 }
 
+interface User {
+	id: string
+	username: string
+	firstName: string
+	lastName: string
+}
+
+const MyUserContext = React.createContext<User>(null)
+
+function App() {
+	const [myUser, setMyUser] = React.useState<User>(null)
+
+	React.useEffect(() => {
+		fetch("/users/me").then(response => response.json()).then((json: User) => setMyUser(json))
+	})
+
+	if (myUser == null) {
+		return <></>
+	}
+
+	return <MyUserContext.Provider value={myUser}>
+		<MessagePane chatID="4f35714b-171e-45f9-bf2e-6a92cdfb6f72"></MessagePane>
+	</MyUserContext.Provider>
+}
+
 function MessageComponent(props: {message: Message}) {
-	const sentTime = new Date(props.message.timestamp)
+	const myUser = React.useContext(MyUserContext)
+
+	const sentTime = new Date(props.message.timestamp * 1000)
 	const formattedDate = new Intl.DateTimeFormat("en-US").format(sentTime)
 	const formattedTime = new Intl.DateTimeFormat("en-US", {
 		timeStyle: "short"
 	}).format(sentTime)
 
 	return (
-		<div className="d-flex flex-column align-items-end mb-2">
-			<span className="message-content bg-primary mb-1 shadow-md text-light">
+		<div className={`d-flex flex-column mb-2 ${props.message.userID == myUser.id ? "align-items-end align-self-end" : "align-items-start align-self-start"}`}>
+			<span className={`message-content bg-primary mb-1 shadow-md text-light ${props.message.userID == myUser.id ? "message-content-right" : "message-content-left"}`}>
 				{props.message.content}
 			</span>
 
-			<span className="message-timestamp d-block text-secondary">
+			<span className="message-metadatum d-block text-secondary">
+				{`${props.message.userFirstName} ${props.message.userLastName}`}
+			</span>
+
+			<span className="message-metadatum d-block text-secondary mb-1">
 				{`${formattedDate}, ${formattedTime}`}
 			</span>
 		</div>
@@ -78,9 +111,13 @@ function MessagePane(props: {chatID?: string}) {
 		messageContainerRef.current.scrollTop = messageContainerRef.current.offsetHeight
 	}, [messages])
 
+	if (props.chatID == undefined) {
+		return <></>
+	}
+
 	return <div className="d-flex flex-column vh-100">
 		<div
-			className="d-flex align-items-end flex-column flex-grow-1 overflow-scroll p-2"
+			className="d-flex flex-column flex-grow-1 overflow-scroll p-2"
 			ref={messageContainerRef}>
 			{messages.map(message =>
 				<MessageComponent key={message.id} message={message}></MessageComponent>
@@ -106,4 +143,4 @@ function MessagePane(props: {chatID?: string}) {
 
 ReactDOMClient
 	.createRoot(document.querySelector(".root"))
-	.render(<MessagePane chatID="4f35714b-171e-45f9-bf2e-6a92cdfb6f72"></MessagePane>)
+	.render(<App></App>)
